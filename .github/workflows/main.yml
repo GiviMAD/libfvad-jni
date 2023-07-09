@@ -185,8 +185,8 @@ jobs:
         name: libfvadjni v${{ steps.deploy.outputs.VERSION }}
         draft: false
         prerelease: false
-        generate_release_notes: false
-        body: A JNI wrapper over libfvad v${{ steps.deploy.outputs.LIBFVAD_VERSION }}
+        generate_release_notes: true
+        body: A JNI wrapper over [libfvad](https://github.com/dpirch/libfvad) v${{ steps.deploy.outputs.LIBFVAD_VERSION }}
         files: |
           target/libfvad-jni-${{ steps.deploy.outputs.VERSION }}.jar
       env:
