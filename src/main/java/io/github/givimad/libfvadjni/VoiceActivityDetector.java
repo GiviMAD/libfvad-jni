@@ -134,6 +134,7 @@ public class VoiceActivityDetector implements AutoCloseable {
         /**
          * Initialize from number. Only 8000, 16000, 32000, 48000 are allowed.
          *
+         * @param value desired sample rate.
          * @return sample rate enum instance.
          * @throws IllegalArgumentException unsupported value.
          */
