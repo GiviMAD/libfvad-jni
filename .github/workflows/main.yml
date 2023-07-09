@@ -1,0 +1,193 @@
+name: CI
+on:
+  push:
+    tags: [ "v*.*.*", "v*.*.*-*" ]
+  workflow_dispatch:
+jobs:
+  build-lib-debian-x86_64:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/download-artifact@v3
+      - name: Docker Setup Buildx
+        uses: docker/setup-buildx-action@v1.6.0
+        with:
+          install: true
+      - name: Setup project dir
+        run: |
+          mkdir -p dist
+      - name: Build native library
+        run: |
+          docker build --build-arg="RUN_TESTS=true" -f dockerfile . -t libfvadjni_binary:x86_64 --load
+          docker run --platform=amd64 -v $(pwd)/dist:/out libfvadjni_binary:x86_64 bash -c "cp src/main/resources/debian-amd64/*.so /out/"
+      - name: Artifact debian x86_64
+        uses: actions/upload-artifact@v3
+        with:
+          name: debian-binary-amd64
+          path: dist/*.so
+
+  build-lib-debian-arm64:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/download-artifact@v3
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+      - name: Docker Setup Buildx
+        uses: docker/setup-buildx-action@v1.6.0
+        with:
+          install: true
+      - name: Setup project dir
+        run: |
+          mkdir -p dist
+      - name: Build native library
+        run: |
+          docker build -f dockerfile . -t libfvadjni_binary:arm64 --platform arm64 --load
+          DOCKER_BUILDKIT=1 docker run --platform=arm64 -v $(pwd)/dist:/out libfvadjni_binary:arm64 bash -c "cp src/main/resources/debian-arm64/*.so /out/"
+      - name: Artifact debian arm64
+        uses: actions/upload-artifact@v3
+        with:
+          name: debian-binary-arm64
+          path: dist/*.so
+
+  build-lib-debian-arm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/download-artifact@v3
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+      - name: Docker Setup Buildx
+        uses: docker/setup-buildx-action@v1.6.0
+        with:
+          install: true
+      - name: Setup project dir
+        run: |
+          mkdir -p dist
+      - name: Build native library
+        run: |
+          docker build -f dockerfile . -t libfvadjni_binary:armv7l --platform arm --load
+          DOCKER_BUILDKIT=1 docker run --platform=arm -v $(pwd)/dist:/out libfvadjni_binary:armv7l bash -c "cp src/main/resources/debian-armv7l/*.so /out/"
+      - name: Artifact debian armv7l
+        uses: actions/upload-artifact@v3
+        with:
+          name: debian-binary-armv7l
+          path: dist/*.so
+
+  build-lib-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/download-artifact@v3
+      - uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+      - name: Setup project dir
+        run: |
+          # choco upgrade mingw
+          git submodule update --init
+          mkdir dist
+      - name: Build native library
+        shell: powershell
+        run: |
+          .\build_win.ps1
+          mv src\main\resources\win-amd64\libfvadjni.dll .\dist\
+      - name: Artifact windows x86_64
+        uses: actions/upload-artifact@v3
+        with:
+          name: windows-binary-x86_64
+          path: dist/libfvadjni.dll
+
+  build-lib-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/download-artifact@v3
+      - uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+      # - name: Set up Maven
+      #   uses: stCarolas/setup-maven@v4.5
+      #   with:
+      #     maven-version: 3.9.2
+      - name: Setup project dir
+        run: |
+          export DYLD_LIBRARY_PATH=/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/
+          mkdir -p dist
+          mkdir -p dist_arm64
+          git submodule update --init
+      - name: Build binary
+        run: |
+          export DYLD_LIBRARY_PATH=/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/
+          ./build_macos.sh amd64
+          ./build_macos.sh arm64
+          # mvn test
+          mv src/main/resources/macos-amd64/libfvadjni.dylib dist/
+          mv src/main/resources/macos-arm64/libfvadjni.dylib dist_arm64/
+      - name: Artifact macos amd64
+        uses: actions/upload-artifact@v3
+        with:
+          name: macos-binary-amd64
+          path: dist/libfvadjni.dylib
+      - name: Artifact macos arm64
+        uses: actions/upload-artifact@v3
+        with:
+          name: macos-binary-arm64
+          path: dist_arm64/libfvadjni.dylib
+
+  deploy:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: [build-lib-debian-x86_64,build-lib-debian-arm,build-lib-debian-arm64,build-lib-windows,build-lib-macos]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/download-artifact@v3
+    - name: check tree
+      run: ls -R
+    - name: setup resources
+      run: |
+        mv ./debian-binary-amd64/*.so ./src/main/resources/debian-amd64/
+        mv ./debian-binary-arm64/*.so ./src/main/resources/debian-arm64/
+        mv ./debian-binary-armv7l/*.so ./src/main/resources/debian-armv7l/
+        mv ./windows-binary-x86_64/libfvadjni.dll ./src/main/resources/win-amd64/libfvadjni.dll
+        mv ./macos-binary-amd64/libfvadjni.dylib ./src/main/resources/macos-amd64/libfvadjni.dylib
+        mv ./macos-binary-arm64/libfvadjni.dylib ./src/main/resources/macos-arm64/libfvadjni.dylib
+    - name: Set up Maven Central Repository
+      uses: actions/setup-java@v1
+      with:
+        java-version: 17
+        server-id: sonatype-nexus-staging
+        server-username: MAVEN_USERNAME
+        server-password: MAVEN_PASSWORD
+        gpg-private-key: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
+        gpg-passphrase: MAVEN_GPG_PASSPHRASE
+    - name: Deploy with Maven
+      id: deploy
+      run: |
+        mvn -B clean deploy -DskipTests -Pci-cd
+        VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+        LIBFVAD_VERSION=$(echo "${VERSION%%"-"*}")
+        echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+        echo "LIBFVAD_VERSION=$LIBFVAD_VERSION" >> $GITHUB_OUTPUT
+      env:
+        MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+        MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
+        MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
+    - name: Release
+      uses: softprops/action-gh-release@v1
+      id: create_release
+      with:
+        tag_name: libfvad_jni_${{ steps.deploy.outputs.VERSION }}
+        name: libfvadjni v${{ steps.deploy.outputs.VERSION }}
+        draft: false
+        prerelease: false
+        generate_release_notes: false
+        body: A JNI wrapper over libfvad v${{ steps.deploy.outputs.LIBFVAD_VERSION }}
+        files: |
+          target/libfvad-jni-${{ steps.deploy.outputs.VERSION }}.jar
+      env:
+        GITHUB_TOKEN: ${{ github.token }}

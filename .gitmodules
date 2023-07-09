@@ -1,0 +1,3 @@
+[submodule "src/main/native/libfvad"]
+	path = src/main/native/libfvad
+	url = https://github.com/dpirch/libfvad.git
