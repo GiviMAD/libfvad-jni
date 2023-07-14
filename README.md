@@ -1,6 +1,6 @@
 # LibfvadJNI
 
-A JNI wrapper for [libfvad](https://github.com/dpirch/libfvad) a fork of the VAD engine that is part of [WebRTC](https://webrtc.org), it allows voice activity detection in Java.
+A JNI wrapper for [libfvad](https://github.com/dpirch/libfvad), allows voice activity detection in Java.
 
 ## Platform support 
 
