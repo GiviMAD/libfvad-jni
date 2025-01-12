@@ -4,6 +4,7 @@ RUN curl -s https://apt.kitware.com/kitware-archive.sh | bash -s
 RUN apt update && apt install -y git build-essential cmake
 COPY jfk.wav .
 COPY pom.xml .
+COPY CMakeLists.txt .
 COPY .git ./.git
 COPY .gitmodules ./.gitmodules
 COPY src ./src

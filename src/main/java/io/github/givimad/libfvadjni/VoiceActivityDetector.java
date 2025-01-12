@@ -113,11 +113,11 @@ public class VoiceActivityDetector implements AutoCloseable {
         /** 8000 samples per seconds */
         S8000(8000),
         /** 8000 samples per seconds */
-         S16000(16000),
+        S16000(16000),
         /** 8000 samples per seconds */
-         S32000(32000),
+        S32000(32000),
         /** 8000 samples per seconds */
-         S48000(48000);
+        S48000(48000);
 
         SampleRate(final int value) {
             this.value = value;
@@ -196,21 +196,21 @@ public class VoiceActivityDetector implements AutoCloseable {
         String osArch = System.getProperty("os.arch").toLowerCase();
         if (osName.contains("win")) {
             if (osArch.contains("amd64") || osArch.contains("x86_64")) {
-                bundleLibraryPath = "/win-amd64/libfvadjni.dll";
+                bundleLibraryPath = "/win-amd64/libfvad-jni.dll";
             }
         } else if (osName.contains("nix") || osName.contains("nux") || osName.contains("aix")) {
             if (osArch.contains("amd64") || osArch.contains("x86_64")) {
-                bundleLibraryPath = "/debian-amd64/libfvadjni.so";
+                bundleLibraryPath = "/debian-amd64/liblibfvad-jni.so";
             } else if (osArch.contains("aarch64") || osArch.contains("arm64")) {
-                bundleLibraryPath = "/debian-arm64/libfvadjni.so";
+                bundleLibraryPath = "/debian-arm64/liblibfvad-jni.so";
             } else if (osArch.contains("armv7") || osArch.contains("arm")) {
-                bundleLibraryPath = "/debian-armv7l/libfvadjni.so";
+                bundleLibraryPath = "/debian-armv7l/liblibfvad-jni.so";
             }
         } else if (osName.contains("mac") || osName.contains("darwin")) {
             if (osArch.contains("amd64") || osArch.contains("x86_64")) {
-                bundleLibraryPath = "/macos-amd64/libfvadjni.dylib";
+                bundleLibraryPath = "/macos-amd64/liblibfvad-jni.dylib";
             } else if (osArch.contains("aarch64") || osArch.contains("arm64")) {
-                bundleLibraryPath = "/macos-arm64/libfvadjni.dylib";
+                bundleLibraryPath = "/macos-arm64/liblibfvad-jni.dylib";
             }
         }
         if (bundleLibraryPath == null) {

@@ -8,7 +8,7 @@
     <artifactId>libfvad-jni</artifactId>
     <name>libfvad-jni</name>
     <url>https://github.com/GiviMAD/libfvad-jni</url>
-    <version>1.0.0-0</version>
+    <version>1.0.0-1</version>
     <description>A JNI wrapper for using libfvad</description>
     <licenses>
         <license>
